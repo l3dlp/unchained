@@ -1,0 +1,506 @@
+package mywebfont
+
+import (
+	"encoding/json"
+	"html/template"
+	"os"
+	"path/filepath"
+)
+
+type Options struct {
+	Root    string
+	Out     string
+	BaseURL string
+	Title   string
+}
+
+func Generate(options Options) error {
+	if options.BaseURL == "" {
+		options.BaseURL = "webfonts"
+	}
+	if options.Title == "" {
+		options.Title = "My Webfonts"
+	}
+
+	catalog, err := Scan(options.Root)
+	if err != nil {
+		return err
+	}
+	data, err := json.Marshal(catalog)
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(filepath.Dir(options.Out), 0o755); err != nil {
+		return err
+	}
+	file, err := os.Create(options.Out)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	return pageTemplate.Execute(file, map[string]any{
+		"Title":   options.Title,
+		"BaseURL": options.BaseURL,
+		"Catalog": template.JS(data),
+	})
+}
+
+var pageTemplate = template.Must(template.New("page").Parse(`<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}}</title>
+  <script>
+    document.documentElement.dataset.theme = localStorage.getItem("mywebfont:theme") === "dark" ? "dark" : "light";
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f7f4;
+      --aside-bg: #fbfbf8;
+      --panel: #ffffff;
+      --line: #d8d8d0;
+      --ink: #181916;
+      --muted: #686b60;
+      --accent: #0f766e;
+      --accent-ink: #ffffff;
+      --code: #111412;
+      --code-bg: #eff1ec;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #000000;
+      --aside-bg: #080808;
+      --panel: #111111;
+      --line: #2a2a2a;
+      --ink: #f5f5f5;
+      --muted: #a5a5a5;
+      --accent: #2dd4bf;
+      --accent-ink: #001f1b;
+      --code: #f2f2f2;
+      --code-bg: #0b0b0b;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); }
+    button, input, textarea { font: inherit; }
+    .app { display: grid; grid-template-columns: 310px minmax(0, 1fr); min-height: 100vh; }
+    aside { border-right: 1px solid var(--line); background: var(--aside-bg); padding: 18px; position: sticky; top: 0; height: 100vh; overflow: auto; }
+    main { padding: 22px; min-width: 0; }
+    h1 { font-size: 21px; line-height: 1.1; margin: 0 0 14px; }
+    h2 { font-size: 18px; margin: 0; }
+    .titlebar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 14px; }
+    .titlebar h1 { margin: 0; }
+    label { display: block; color: var(--muted); font-size: 12px; margin: 14px 0 6px; }
+    input, textarea { width: 100%; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); padding: 9px 10px; }
+    textarea { min-height: 190px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.45; background: var(--code-bg); color: var(--code); }
+    .count { color: var(--muted); font-size: 12px; margin: 8px 0 12px; }
+    .list { display: grid; gap: 4px; }
+    .font-item { display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 4px; border: 1px solid transparent; border-radius: 6px; }
+    .font-item:hover, .font-item.active { border-color: var(--line); background: var(--panel); }
+    .font-row { min-width: 0; border: 0; background: transparent; border-radius: 6px; padding: 9px 10px 9px 2px; text-align: left; cursor: pointer; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .font-row.active { outline: 2px solid color-mix(in srgb, var(--accent), transparent 70%); }
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0 18px; }
+    .btn { border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); padding: 8px 10px; cursor: pointer; }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+    .btn:disabled { opacity: .45; cursor: not-allowed; }
+    .icon-btn { width: 30px; height: 30px; display: inline-grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; font-size: 18px; line-height: 1; }
+    .icon-btn:hover, .icon-btn.active { color: #b45309; background: #fff7ed; }
+    :root[data-theme="dark"] .icon-btn:hover, :root[data-theme="dark"] .icon-btn.active { color: #fbbf24; background: #231900; }
+    .fav-toggle { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 8px 10px; cursor: pointer; color: var(--ink); }
+    .fav-toggle input { position: absolute; opacity: 0; pointer-events: none; }
+    .fav-toggle span:first-of-type { color: var(--muted); font-size: 18px; line-height: 1; }
+    .fav-toggle:has(input:checked) span:first-of-type { color: #b45309; }
+    .back { display: none; align-items: center; gap: 8px; margin: 0 0 16px; }
+    .meta { color: var(--muted); font-size: 13px; }
+    .preview { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 22px 0; margin: 16px 0; }
+    .sample { font-size: clamp(34px, 6vw, 76px); line-height: 1.05; overflow-wrap: anywhere; margin: 0; }
+    .variants { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 18px; }
+    .chip { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); padding: 7px 9px; font-size: 13px; }
+    .chip input { width: auto; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+    .block { min-width: 0; }
+    .block-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin: 0 0 7px; }
+    .block-title { font-weight: 650; font-size: 13px; }
+    .empty { color: var(--muted); padding: 36px 0; }
+    @media (max-width: 840px) {
+      body { overflow-x: hidden; }
+      .app { display: block; min-height: 100dvh; }
+      aside { position: static; height: 100dvh; border-right: 0; border-bottom: 0; }
+      main { display: none; min-height: 100dvh; padding: 16px; }
+      .app.detail-open aside { display: none; }
+      .app.detail-open main { display: block; }
+      .back { display: inline-flex; }
+      .grid { grid-template-columns: 1fr; }
+      .preview { min-height: 38dvh; display: flex; align-items: center; }
+      .sample { font-size: clamp(42px, 15vw, 88px); }
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="app">
+    <aside>
+      <div class="titlebar">
+        <h1>{{.Title}}</h1>
+        <div class="toolbar" style="margin:0">
+          <button id="themeToggle" class="btn" type="button">Dark</button>
+          <button id="showFavorites" class="btn" type="button">Favoris</button>
+        </div>
+      </div>
+      <label for="search">Rechercher</label>
+      <input id="search" type="search" placeholder="ABeeZee, Alegreya, Roboto...">
+      <input id="baseURL" type="hidden" value="{{.BaseURL}}">
+      <div id="count" class="count"></div>
+      <div id="list" class="list"></div>
+    </aside>
+    <main>
+      <div id="empty" class="empty">Choisis une fonte a gauche.</div>
+      <section id="favoritesPanel" hidden>
+        <button id="backFromFavorites" class="btn back" type="button">&larr; Liste</button>
+        <h2>Favoris</h2>
+        <div id="favoritesMeta" class="meta"></div>
+        <div class="toolbar">
+          <button id="copyFavorites" class="btn primary" type="button">Copier le CSS</button>
+        </div>
+        <textarea id="favoritesCss" readonly></textarea>
+      </section>
+      <section id="detail" hidden>
+        <button id="backToList" class="btn back" type="button">&larr; Liste</button>
+        <h2 id="familyName"></h2>
+        <div id="familyMeta" class="meta"></div>
+        <div class="toolbar">
+          <label class="fav-toggle"><input id="favoriteCurrent" type="checkbox"><span>★</span><span>Favori</span></label>
+          <button id="copyAll" class="btn primary" type="button">Copier tout</button>
+          <button id="selectAll" class="btn" type="button">Tout cocher</button>
+          <button id="selectRegular" class="btn" type="button">Regular seulement</button>
+        </div>
+        <label for="sampleText">Texte de preview</label>
+        <input id="sampleText" value="Hamburgefonstiv 0123456789">
+        <div class="preview"><p id="sample" class="sample"></p></div>
+        <div id="variants" class="variants"></div>
+        <div class="grid">
+          <div class="block">
+            <div class="block-head"><span class="block-title">@font-face</span><button class="btn copy" data-copy="fontFace" type="button">Copier</button></div>
+            <textarea id="fontFace" readonly></textarea>
+          </div>
+          <div class="block">
+            <div class="block-head"><span class="block-title">Utilisation CSS</span><button class="btn copy" data-copy="usage" type="button">Copier</button></div>
+            <textarea id="usage" readonly></textarea>
+          </div>
+          <div class="block">
+            <div class="block-head"><span class="block-title">HTML complet</span><button class="btn copy" data-copy="htmlCode" type="button">Copier</button></div>
+            <textarea id="htmlCode" readonly></textarea>
+          </div>
+          <div class="block">
+            <div class="block-head"><span class="block-title">CSS complet</span><button class="btn copy" data-copy="allCss" type="button">Copier</button></div>
+            <textarea id="allCss" readonly></textarea>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <style id="liveFont"></style>
+  <script>
+    const catalog = {{.Catalog}};
+    const favoritesKey = "mywebfont:favorites";
+    const themeKey = "mywebfont:theme";
+    const state = { family: null, selected: new Set(), favorites: loadFavorites(), visibleFamilies: [] };
+    const $ = (id) => document.getElementById(id);
+    const els = {
+      app: $("app"), search: $("search"), baseURL: $("baseURL"), count: $("count"), list: $("list"),
+      empty: $("empty"), detail: $("detail"), favoritesPanel: $("favoritesPanel"), favoritesMeta: $("favoritesMeta"),
+      favoritesCss: $("favoritesCss"), favoriteCurrent: $("favoriteCurrent"), showFavorites: $("showFavorites"), themeToggle: $("themeToggle"),
+      familyName: $("familyName"), familyMeta: $("familyMeta"),
+      variants: $("variants"), sampleText: $("sampleText"), sample: $("sample"),
+      fontFace: $("fontFace"), usage: $("usage"), htmlCode: $("htmlCode"), allCss: $("allCss"),
+      liveFont: $("liveFont")
+    };
+
+    function loadFavorites() {
+      try {
+        return new Set(JSON.parse(localStorage.getItem(favoritesKey) || "[]"));
+      } catch {
+        return new Set();
+      }
+    }
+
+    function saveFavorites() {
+      localStorage.setItem(favoritesKey, JSON.stringify([...state.favorites].sort()));
+    }
+
+    function isFavorite(family) {
+      return state.favorites.has(family.name);
+    }
+
+    function toggleFavorite(family, forced) {
+      const next = typeof forced === "boolean" ? forced : !isFavorite(family);
+      next ? state.favorites.add(family.name) : state.favorites.delete(family.name);
+      saveFavorites();
+      renderList();
+      if (state.family && state.family.name === family.name) renderFavoriteControl();
+      if (!els.favoritesPanel.hidden) renderFavoritesPanel();
+    }
+
+    function currentTheme() {
+      return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+    }
+
+    function applyTheme(theme) {
+      const next = theme === "dark" ? "dark" : "light";
+      document.documentElement.dataset.theme = next;
+      els.themeToggle.textContent = next === "dark" ? "Light" : "Dark";
+      localStorage.setItem(themeKey, next);
+    }
+
+    function pathJoin(...parts) {
+      return parts.filter(Boolean).map((part, index) => {
+        const clean = String(part).replace(/^\/+|\/+$/g, "");
+        return index === 0 && /^https?:\/\//.test(part) ? part.replace(/\/+$/g, "") : encodeURIComponent(clean);
+      }).join("/").replace(/^https%3A\/%2F\//, "https://").replace(/^http%3A\/%2F\//, "http://");
+    }
+
+    function fontURL(family, variant) {
+      return pathJoin(els.baseURL.value, family.dir, variant.file);
+    }
+
+    function formatFor(file) {
+      const ext = file.split(".").pop().toLowerCase();
+      return ext === "ttf" ? "truetype" : ext === "otf" ? "opentype" : ext;
+    }
+
+    function selectedVariants() {
+      return state.family.variants.filter((variant) => state.selected.has(variant.file));
+    }
+
+    function cssEscapeString(value) {
+      return String(value).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+    }
+
+	function buildFontFace(family, variants) {
+	  return variants.map((variant) => "@font-face {\n" +
+	    "  font-family: '" + cssEscapeString(family.name) + "';\n" +
+	    "  src: url('" + fontURL(family, variant) + "') format('" + formatFor(variant.file) + "');\n" +
+	    "  font-weight: " + variant.weight + ";\n" +
+	    "  font-style: " + variant.style + ";\n" +
+	    "  font-display: swap;\n" +
+	    "}").join("\n\n");
+	}
+
+	function buildUsage(family, variants) {
+	  const first = variants[0] || family.variants[0];
+	  const className = "my-" + (family.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "font");
+	  return "." + className + " {\n" +
+	    "  font-family: '" + cssEscapeString(family.name) + "', sans-serif;\n" +
+	    "  font-weight: " + (first ? first.weight : 400) + ";\n" +
+	    "  font-style: " + (first ? first.style : "normal") + ";\n" +
+	    "}";
+	}
+
+    function buildGlobalFavoritesCSS() {
+      const favorites = catalog.families.filter((family) => state.favorites.has(family.name));
+      return favorites.map((family) => buildFontFace(family, family.variants) + "\n\n" + buildUsage(family, family.variants)).join("\n\n");
+    }
+
+    function renderList() {
+      const query = els.search.value.trim().toLowerCase();
+      const families = catalog.families.filter((family) => family.name.toLowerCase().includes(query));
+      state.visibleFamilies = families.slice(0, 300);
+	  els.count.textContent = families.length + " / " + catalog.families.length + " fontes · " + state.favorites.size + " favoris";
+      els.list.innerHTML = "";
+      state.visibleFamilies.forEach((family) => {
+        const item = document.createElement("div");
+        item.className = "font-item" + (state.family && state.family.name === family.name ? " active" : "");
+        const favorite = document.createElement("button");
+        favorite.type = "button";
+        favorite.className = "icon-btn" + (isFavorite(family) ? " active" : "");
+        favorite.textContent = "★";
+        favorite.title = isFavorite(family) ? "Retirer des favoris" : "Ajouter aux favoris";
+        favorite.setAttribute("aria-label", favorite.title);
+        favorite.addEventListener("click", (event) => {
+          event.stopPropagation();
+          toggleFavorite(family);
+        });
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "font-row" + (state.family && state.family.name === family.name ? " active" : "");
+        button.textContent = family.name;
+        button.addEventListener("click", () => selectFamily(family, { focusList: true }));
+        item.append(favorite, button);
+        els.list.appendChild(item);
+      });
+    }
+
+    function focusActiveRow() {
+      const active = els.list.querySelector(".font-row.active");
+      if (!active) return;
+      active.focus({ preventScroll: true });
+      active.scrollIntoView({ block: "nearest" });
+    }
+
+    function selectFamily(family, options = {}) {
+      state.family = family;
+      state.selected = new Set(family.variants.filter((variant) => variant.weight === 400 && variant.style === "normal").map((variant) => variant.file));
+      if (state.selected.size === 0 && family.variants[0]) state.selected.add(family.variants[0].file);
+      els.empty.hidden = true;
+      els.favoritesPanel.hidden = true;
+      els.detail.hidden = false;
+      els.app.classList.add("detail-open");
+      renderList();
+      renderDetail();
+      if (options.focusList && !window.matchMedia("(max-width: 840px)").matches) {
+        focusActiveRow();
+      }
+    }
+
+    function currentVisibleIndex() {
+      if (!state.family) return -1;
+      return state.visibleFamilies.findIndex((family) => family.name === state.family.name);
+    }
+
+    function moveFamily(delta) {
+      if (!state.family || state.visibleFamilies.length === 0) return;
+      const current = currentVisibleIndex();
+      if (current < 0) return;
+      const next = Math.max(0, Math.min(state.visibleFamilies.length - 1, current + delta));
+      if (next === current) return;
+      selectFamily(state.visibleFamilies[next]);
+      focusActiveRow();
+    }
+
+    function renderDetail() {
+      const family = state.family;
+      els.familyName.textContent = family.name;
+	  els.familyMeta.textContent = family.variants.length + " variante" + (family.variants.length > 1 ? "s" : "");
+      renderFavoriteControl();
+      els.sample.textContent = els.sampleText.value;
+      els.variants.innerHTML = "";
+      family.variants.forEach((variant) => {
+        const label = document.createElement("label");
+        label.className = "chip";
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.checked = state.selected.has(variant.file);
+        input.addEventListener("change", () => {
+          input.checked ? state.selected.add(variant.file) : state.selected.delete(variant.file);
+          renderCode();
+        });
+	    label.append(input, document.createTextNode(variant.label + " (" + variant.file + ")"));
+        els.variants.appendChild(label);
+      });
+      renderCode();
+    }
+
+    function renderFavoriteControl() {
+      if (!state.family) return;
+      els.favoriteCurrent.checked = isFavorite(state.family);
+    }
+
+    function renderFavoritesPanel() {
+      const names = catalog.families.filter((family) => state.favorites.has(family.name)).map((family) => family.name);
+      els.favoritesMeta.textContent = names.length === 0 ? "Aucun favori" : names.length + " typo" + (names.length > 1 ? "s" : "") + " · " + names.join(", ");
+      els.favoritesCss.value = buildGlobalFavoritesCSS();
+    }
+
+    function showFavoritesPanel() {
+      els.empty.hidden = true;
+      els.detail.hidden = true;
+      els.favoritesPanel.hidden = false;
+      els.app.classList.add("detail-open");
+      renderFavoritesPanel();
+    }
+
+    function renderCode() {
+      const family = state.family;
+      const variants = selectedVariants();
+      const fontFace = buildFontFace(family, variants);
+      const usage = buildUsage(family, variants);
+      const allCss = [fontFace, usage].filter(Boolean).join("\n\n");
+      els.fontFace.value = fontFace;
+      els.usage.value = usage;
+      els.allCss.value = allCss;
+	  const htmlClass = (usage.match(/\.([a-z0-9-]+)/) || [null, "my-font"])[1];
+	  const htmlText = els.sampleText.value.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+	  els.htmlCode.value = "<style>\n" + allCss + "\n</style>\n\n<p class=\"" + htmlClass + "\">" + htmlText + "</p>";
+      els.liveFont.textContent = fontFace;
+	  els.sample.style.fontFamily = "'" + family.name + "', sans-serif";
+    }
+
+    async function copyText(text, button) {
+      await navigator.clipboard.writeText(text);
+      const old = button.textContent;
+      button.textContent = "Copie";
+      setTimeout(() => button.textContent = old, 900);
+    }
+
+    els.search.addEventListener("input", renderList);
+    els.sampleText.addEventListener("input", () => {
+      els.sample.textContent = els.sampleText.value;
+      state.family && renderCode();
+    });
+    els.showFavorites.addEventListener("click", showFavoritesPanel);
+    els.themeToggle.addEventListener("click", () => {
+      applyTheme(currentTheme() === "dark" ? "light" : "dark");
+    });
+    els.favoriteCurrent.addEventListener("change", () => {
+      if (state.family) toggleFavorite(state.family, els.favoriteCurrent.checked);
+    });
+    $("copyAll").addEventListener("click", (event) => copyText(els.allCss.value, event.currentTarget));
+    $("copyFavorites").addEventListener("click", (event) => copyText(els.favoritesCss.value, event.currentTarget));
+    $("backToList").addEventListener("click", () => {
+      els.app.classList.remove("detail-open");
+      focusActiveRow();
+    });
+    $("backFromFavorites").addEventListener("click", () => {
+      els.app.classList.remove("detail-open");
+      if (state.family) {
+        els.detail.hidden = false;
+        els.favoritesPanel.hidden = true;
+      }
+      focusActiveRow();
+    });
+    $("selectAll").addEventListener("click", () => {
+      state.family.variants.forEach((variant) => state.selected.add(variant.file));
+      renderDetail();
+    });
+    $("selectRegular").addEventListener("click", () => {
+      state.selected = new Set(state.family.variants.filter((variant) => variant.weight === 400 && variant.style === "normal").map((variant) => variant.file));
+      if (state.selected.size === 0 && state.family.variants[0]) state.selected.add(state.family.variants[0].file);
+      renderDetail();
+    });
+    document.querySelectorAll(".copy").forEach((button) => {
+      button.addEventListener("click", () => copyText($(button.dataset.copy).value, button));
+    });
+    function isTextEditingTarget(element) {
+      if (!element) return false;
+      const tag = element.tagName;
+      if (tag === "TEXTAREA") return true;
+      if (tag !== "INPUT") return false;
+      return ["email", "number", "password", "search", "tel", "text", "url"].includes((element.type || "text").toLowerCase());
+    }
+
+    window.addEventListener("keydown", (event) => {
+      if (event.altKey || event.metaKey || event.ctrlKey || isTextEditingTarget(document.activeElement)) return;
+      if (event.key === "ArrowDown" || event.key === "Down") {
+        event.preventDefault();
+        event.stopPropagation();
+        moveFamily(1);
+      } else if (event.key === "ArrowUp" || event.key === "Up") {
+        event.preventDefault();
+        event.stopPropagation();
+        moveFamily(-1);
+      } else if (event.key === "Escape" && els.app.classList.contains("detail-open")) {
+        event.preventDefault();
+        event.stopPropagation();
+        els.app.classList.remove("detail-open");
+      }
+    }, true);
+
+    applyTheme(localStorage.getItem(themeKey) || "light");
+    renderList();
+  </script>
+</body>
+</html>
+`))

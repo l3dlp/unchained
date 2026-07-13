@@ -1,0 +1,11 @@
+# test log
+getenv GOTMPDIR
+getenv TMPDIR
+open /var/folders/55/6q54y9212b3b6wdmq28rclwm0000gn/T/TestScanInfersVariants2784987121/001/Alegreya/regular.ttf
+open /var/folders/55/6q54y9212b3b6wdmq28rclwm0000gn/T/TestScanInfersVariants2784987121/001/Alegreya/italic.ttf
+open /var/folders/55/6q54y9212b3b6wdmq28rclwm0000gn/T/TestScanInfersVariants2784987121/001/Alegreya/700.ttf
+open /var/folders/55/6q54y9212b3b6wdmq28rclwm0000gn/T/TestScanInfersVariants2784987121/001/Alegreya/700italic.ttf
+open /var/folders/55/6q54y9212b3b6wdmq28rclwm0000gn/T/TestScanInfersVariants2784987121/001/Alegreya/date.txt
+open /var/folders/55/6q54y9212b3b6wdmq28rclwm0000gn/T/TestScanInfersVariants2784987121/001
+open /var/folders/55/6q54y9212b3b6wdmq28rclwm0000gn/T/TestScanInfersVariants2784987121/001/Alegreya
+open /var/folders/55/6q54y9212b3b6wdmq28rclwm0000gn/T
