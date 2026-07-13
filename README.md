@@ -1,5 +1,7 @@
 # Getting Back Your Data
 
+**Languages:** [English](README.md) • [Français](README.fr.md) • [Español](README.es.md) • [Português](README.pt.md) • [Italiano](README.it.md)
+
 You've been giving your thoughts, memories, and emails to corporations for over a decade. They've mined it, analyzed it, sold it to the highest bidder. Now you want it *back*. In a format that doesn't require their permission to read. On *your* machine. Forever.
 
 This repo is your toolkit.
@@ -39,6 +41,17 @@ Same deal as ChatGPT. Anthropic gives you JSON, we give you readable Markdown. K
 ```bash
 go run main.go
 ```
+
+### Google Webfonts Manager
+`google/webfonts`
+
+Ever grabbed fonts from Google Fonts and ended up with a shoebox of TTF files? This CLI generates a static HTML GUI where you browse your local font library, pick variants, and copy the `@font-face` CSS blocks. Favorites saved in localStorage. Works offline. Multi-language.
+
+```bash
+go run ./cmd/mywebfont -root webfonts -out webfonts.html -base-url webfonts
+```
+
+Read the [full docs](google/webfonts/README.md).
 
 ### Goodbye Gmail
 `google/gmail`

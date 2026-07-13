@@ -1,5 +1,7 @@
 # Riprendi I Tuoi Dati
 
+**Lingue:** [English](README.md) • [Français](README.fr.md) • [Español](README.es.md) • [Português](README.pt.md) • [Italiano](README.it.md)
+
 Ormai da più di un decennio stai dando i tuoi pensieri, i tuoi ricordi, le tue email alle corporation. Le hanno scavate, analizzate, vendute al miglior offerente. Ora li vuoi *indietro*. In un formato che non richiede il loro permesso per leggerli. Sulla *tua* macchina. Per sempre.
 
 Questo repo è il tuo arsenale.
@@ -39,6 +41,17 @@ Stesso piano di ChatGPT. Anthropic ti dà JSON, ti diamo Markdown leggibile. Tie
 ```bash
 go run main.go
 ```
+
+### Google Webfonts Manager
+`google/webfonts`
+
+Non hai mai scaricato font da Google Fonts e finito con una scatola di TTF sparsi? Questo CLI genera una GUI HTML statica dove navighi la tua libreria locale di font, scegli varianti, e copi i blocchi CSS `@font-face`. Preferiti salvati in localStorage. Funziona offline. Multi-lingua.
+
+```bash
+go run ./cmd/mywebfont -root webfonts -out webfonts.html -base-url webfonts
+```
+
+Docs completo [qui](google/webfonts/README.md).
 
 ### Goodbye Gmail
 `google/gmail`
