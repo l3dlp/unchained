@@ -1,6 +1,6 @@
 # Reprendre Vos Données
 
-Depuis plus d'une décennie, vous donnez vos pensées, vos souvenirs, vos emails à des corporations. Elles les ont minées, analysées, vendues aux plus offrants. Maintenant vous les voulez *dos*. Dans un format qui ne nécessite pas leur permission pour lire. Sur *votre* machine. Jusqu'à la fin.
+Depuis plus d'une décennie, vous donnez vos pensées, vos souvenirs, vos emails à des corporations. Elles les ont minées, analysées, vendues aux plus offrants. Maintenant vous les voulez *de retour*. Dans un format qui ne nécessite pas leur permission pour lire. Sur *votre* machine. Jusqu'à la fin.
 
 Ce repo est votre arsenal.
 
